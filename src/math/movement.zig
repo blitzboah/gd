@@ -7,4 +7,6 @@ pub fn update(playerPosition: *rl.c.Vector3) void {
     if (rl.c.IsKeyDown(rl.c.KEY_A)) playerPosition.x -= 1.0 * speed * rl.c.GetFrameTime();
     if (rl.c.IsKeyDown(rl.c.KEY_S)) playerPosition.z += 1.0 * speed * rl.c.GetFrameTime();
     if (rl.c.IsKeyDown(rl.c.KEY_D)) playerPosition.x += 1.0 * speed * rl.c.GetFrameTime();
+
+    if (rl.c.IsKeyDown(rl.c.KEY_LEFT_SHIFT)) playerPosition.x += 5.0 * speed * rl.c.GetFrameTime();
 }
