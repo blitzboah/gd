@@ -27,9 +27,9 @@ pub fn main() void {
     camera.projection = rl.c.CAMERA_PERSPECTIVE;
     rl.c.DisableCursor();
 
-    var box: vector3 = .{ .x = 0, .y = 0, .z = 0 };
-    const evil_box_1: vector3 = .{ .x = 10, .y = 0, .z = 0 };
-    const evil_box_2: vector3 = .{ .x = 10, .y = 0, .z = 10 };
+    var box: vector3 = .{ .x = 4, .y = 0, .z = 0 };
+    const evil_box_1: vector3 = .{ .x = 0, .y = 0, .z = -5 };
+    //const evil_box_2: vector3 = .{ .x = 10, .y = 0, .z = 10 };
 
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box);
@@ -44,16 +44,19 @@ pub fn main() void {
 
         rl.c.DrawCube(box, 5, 5, 5, rl.c.BLUE);
         rl.c.DrawCube(evil_box_1, 5, 5, 5, rl.c.RED);
-        rl.c.DrawCube(evil_box_2, 5, 5, 5, rl.c.ORANGE);
+        //rl.c.DrawCube(evil_box_2, 5, 5, 5, rl.c.ORANGE);
 
         rl.c.DrawGrid(10, 10);
 
         rl.c.EndMode3D();
 
-        const v1 = gmath.sub(box, evil_box_1);
-        const v2 = gmath.sub(box, evil_box_2);
+        // const be = gmath.sub(evil_box_1, box);
+        // const norm = gmath.Normalized(be);
 
-        const text = if (gmath.LengthSquared(v1) < gmath.LengthSquared(v2)) "closer to box RED" else "closer to box ORAGNE";
+        const view = gmath.add(box, evil_box_1);
+        //const v2 = gmath.sub(box, evil_box_2);
+
+        const text = rl.c.TextFormat("view vecotr: %.2f, %.2f, %.2f", view.x, view.y, view.z);
         rl.c.DrawText(text, 10, 10, 20, rl.c.WHITE);
 
         //var x: f64 = 0;
