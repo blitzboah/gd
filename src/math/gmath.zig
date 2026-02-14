@@ -25,6 +25,10 @@ pub fn sub(a: rl.c.Vector3, b: rl.c.Vector3) rl.c.Vector3 {
     return (rl.c.Vector3){ .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z };
 }
 
+pub fn mul(v: rl.c.Vector3, factor: f32) rl.c.Vector3 {
+    return (rl.c.Vector3){ .x = v.x * factor, .y = v.y * factor, .z = v.z * factor };
+}
+
 pub fn divide(v: rl.c.Vector3, factor: f32) rl.c.Vector3 {
     return (rl.c.Vector3){ .x = v.x / factor, .y = v.y / factor, .z = v.z / factor };
 }
