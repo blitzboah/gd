@@ -27,13 +27,15 @@ pub fn main() void {
     camera.projection = rl.c.CAMERA_PERSPECTIVE;
     rl.c.DisableCursor();
 
-    var box: vector3 = .{ .x = 4, .y = 0, .z = 0 };
-    const evil_box_1: vector3 = .{ .x = 0, .y = 0, .z = -5 };
+    var box: vector3 = .{ .x = 0, .y = 0, .z = 0 };
+    const evil_box_1: vector3 = .{ .x = 0, .y = 0, .z = -15 };
+    var eb_color = rl.c.WHITE;
+    const backstab_distance = 5.0;
     //const evil_box_2: vector3 = .{ .x = 10, .y = 0, .z = 10 };
 
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box);
-        rl.c.UpdateCamera(&camera, rl.c.CAMERA_FREE);
+        rl.c.UpdateCamera(&camera, rl.c.CAMERA_THIRD_PERSON);
 
         rl.c.BeginDrawing();
         defer rl.c.EndDrawing();
@@ -43,7 +45,7 @@ pub fn main() void {
         rl.c.BeginMode3D(camera);
 
         rl.c.DrawCube(box, 5, 5, 5, rl.c.BLUE);
-        rl.c.DrawCube(evil_box_1, 5, 5, 5, rl.c.RED);
+        rl.c.DrawCube(evil_box_1, 5, 5, 5, eb_color);
         //rl.c.DrawCube(evil_box_2, 5, 5, 5, rl.c.ORANGE);
 
         rl.c.DrawGrid(10, 10);
@@ -52,6 +54,16 @@ pub fn main() void {
 
         // const be = gmath.sub(evil_box_1, box);
         // const norm = gmath.Normalized(be);
+
+        const eb = gmath.sub(box, evil_box_1);
+        const norm_eb = gmath.Normalized(eb);
+
+        if (rl.c.IsKeyDown(rl.c.KEY_LEFT_CONTROL) and gmath.Length(gmath.sub(evil_box_1, box)) < backstab_distance) {
+            const dotProd = gmath.dotProduct(norm_eb, gmath.Normalized(evil_box_1));
+            if (dotProd < 0) {
+                eb_color = rl.c.RED;
+            }
+        }
 
         const view = gmath.add(box, evil_box_1);
         //const v2 = gmath.sub(box, evil_box_2);
