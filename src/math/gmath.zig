@@ -17,6 +17,15 @@ pub fn Normalized(v: rl.c.Vector3) rl.c.Vector3 {
     return normalized;
 }
 
+pub fn Approach(flCurrent: f32, flGoal: f32, dt: f32) f32 {
+    const diff = flGoal - flCurrent;
+    if (diff > dt) return flCurrent + dt;
+
+    if (diff < -dt) return flCurrent - dt;
+
+    return flGoal;
+}
+
 pub fn add(a: rl.c.Vector3, b: rl.c.Vector3) rl.c.Vector3 {
     return (rl.c.Vector3){ .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z };
 }
