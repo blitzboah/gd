@@ -3,6 +3,7 @@ const rl = @import("raylib.zig");
 const movement = @import("math/movement.zig");
 const gmath = @import("math/gmath.zig");
 const perlin = @import("perlin.zig");
+const eangle = @import("eangle.zig");
 
 const vector3 = rl.c.Vector3;
 
@@ -20,22 +21,29 @@ pub fn main() void {
     defer rl.c.CloseWindow();
 
     var camera: rl.c.Camera3D = undefined;
-    camera.position = (vector3){ .x = 0, .y = 20, .z = 10 };
-    camera.target = (vector3){ .x = 0, .y = 0, .z = 0 };
+    camera.position = (vector3){ .x = 0, .y = 0, .z = 0 };
     camera.up = (vector3){ .x = 0, .y = 1, .z = 0 };
     camera.fovy = 50;
     camera.projection = rl.c.CAMERA_PERSPECTIVE;
     rl.c.DisableCursor();
 
+    const cameraOffset = 30;
+    const mouseSensi = 0.1;
+    var lastMousePosition: rl.c.Vector2 = rl.c.GetMousePosition();
+
     var box: vector3 = .{ .x = 0, .y = 0, .z = 0 };
     const evil_box_1: vector3 = .{ .x = 0, .y = 0, .z = -15 };
+    var angView: eangle.EAngle = .{};
     var eb_color = rl.c.WHITE;
     const backstab_distance = 5.0;
     //const evil_box_2: vector3 = .{ .x = 10, .y = 0, .z = 10 };
 
     while (!rl.c.WindowShouldClose()) {
-        movement.update(&box);
-        rl.c.UpdateCamera(&camera, rl.c.CAMERA_THIRD_PERSON);
+        movement.update(&box, angView.toVector());
+
+        const mousePosition = rl.c.GetMousePosition();
+        const mouseDelta: rl.c.Vector2 = .{ .x = mousePosition.x - lastMousePosition.x, .y = mousePosition.y - lastMousePosition.y };
+        lastMousePosition = mousePosition;
 
         rl.c.BeginDrawing();
         defer rl.c.EndDrawing();
@@ -58,7 +66,7 @@ pub fn main() void {
         const eb = gmath.sub(box, evil_box_1);
         const norm_eb = gmath.Normalized(eb);
 
-        if (rl.c.IsKeyDown(rl.c.KEY_LEFT_CONTROL) and gmath.Length(gmath.sub(evil_box_1, box)) < backstab_distance) {
+        if (rl.c.IsMouseButtonDown(rl.c.MOUSE_BUTTON_LEFT) and gmath.Length(gmath.sub(evil_box_1, box)) < backstab_distance) {
             const dotProd = gmath.dotProduct(norm_eb, gmath.Normalized(evil_box_1));
             if (dotProd < 0) {
                 eb_color = rl.c.RED;
@@ -70,6 +78,13 @@ pub fn main() void {
 
         const text = rl.c.TextFormat("view vecotr: %.2f, %.2f, %.2f", view.x, view.y, view.z);
         rl.c.DrawText(text, 10, 10, 20, rl.c.WHITE);
+
+        angView.p -= mouseDelta.y * mouseSensi;
+        angView.y += mouseDelta.x * mouseSensi;
+        angView.normalize();
+
+        camera.target = box;
+        camera.position = (gmath.sub(box, gmath.mul(angView.toVector(), cameraOffset)));
 
         //var x: f64 = 0;
         //while (x < 50) : (x += 1) {

@@ -45,3 +45,13 @@ pub fn divide(v: rl.c.Vector3, factor: f32) rl.c.Vector3 {
 pub fn dotProduct(a: rl.c.Vector3, b: rl.c.Vector3) f32 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
+
+pub fn crossProduct(a: rl.c.Vector3, b: rl.c.Vector3) rl.c.Vector3 {
+    var c: rl.c.Vector3 = undefined;
+
+    c.x = a.y * b.z - a.z * b.y;
+    c.y = a.z * b.x - a.x * b.z;
+    c.z = a.x * b.y - a.y * b.x;
+
+    return c;
+}
