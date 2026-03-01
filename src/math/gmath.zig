@@ -26,6 +26,13 @@ pub fn Approach(flCurrent: f32, flGoal: f32, dt: f32) f32 {
     return flGoal;
 }
 
+pub fn Remap(x: f64, t1: f64, t2: f64, s1: f64, s2: f64) f64 {
+    const fx = (x - t1) / (t2 - t1);
+    const gx = fx * (s2 - s1) + s1;
+
+    return gx;
+}
+
 pub fn add(a: rl.c.Vector3, b: rl.c.Vector3) rl.c.Vector3 {
     return (rl.c.Vector3){ .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z };
 }

@@ -65,6 +65,12 @@ pub fn main() void {
     var hitPoint: vector3 = .{ .x = 0, .y = 0, .z = 0 };
     var showHit = false;
 
+    var timeCreated: f64 = undefined;
+    var timeOver: f64 = undefined;
+    const puffTime: f64 = 0.5;
+    const puffStartSize: f64 = 0.3;
+    const puffEndSize: f64 = 0.4;
+
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box, angView.toVector());
 
@@ -89,6 +95,9 @@ pub fn main() void {
                 tracerEnd = vecIntersection;
                 hitPoint = vecIntersection;
                 showHit = true;
+
+                timeCreated = rl.c.GetTime();
+                timeOver = rl.c.GetTime() + puffTime;
             } else {
                 tracerEnd = v1;
             }
@@ -117,7 +126,12 @@ pub fn main() void {
         }
 
         if (showHit) {
-            rl.c.DrawSphere(hitPoint, 0.3, rl.c.ORANGE);
+            if (rl.c.GetTime() > timeOver) {
+                showHit = false;
+            } else {
+                const size = gmath.Remap(rl.c.GetTime(), timeCreated, timeOver, puffStartSize, puffEndSize);
+                rl.c.DrawSphere(hitPoint, @as(f32, @floatCast(size)), rl.c.ORANGE);
+            }
         }
 
         rl.c.DrawGrid(10, 10);
