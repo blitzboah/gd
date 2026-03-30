@@ -32,31 +32,18 @@ pub fn main() void {
     const mouseSensi = 0.1;
     var lastMousePosition: rl.c.Vector2 = rl.c.GetMousePosition();
 
-    var box: vector3 = .{ .x = 0, .y = 0, .z = 0 };
+    var box: vector3 = .{ .x = 0, .y = 3, .z = 0 };
+    const kanye: vector3 = .{ .x = 0, .y = 5, .z = 60 };
     var angView: eangle.EAngle = .{};
 
     const targets = [_]collision.Target{
-        .{
-            .position = .{ .x = 0, .y = 0, .z = -15 },
-            .aabbSize = .{
-                .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
-                .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
-            },
-        },
-        .{
-            .position = .{ .x = 10, .y = 0, .z = -10 },
-            .aabbSize = .{
-                .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
-                .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
-            },
-        },
-        .{
-            .position = .{ .x = -8, .y = 0, .z = -20 },
-            .aabbSize = .{
-                .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
-                .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
-            },
-        },
+        //     .{
+        //         .position = .{ .x = 0, .y = 0, .z = -15 },
+        //         .aabbSize = .{
+        //             .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
+        //             .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
+        //         },
+        //     },
     };
 
     var tracerStart: vector3 = .{ .x = 0, .y = 0, .z = 0 };
@@ -70,6 +57,11 @@ pub fn main() void {
     const puffTime: f64 = 0.5;
     const puffStartSize: f64 = 0.3;
     const puffEndSize: f64 = 0.4;
+
+    var image = rl.c.LoadImage("../assets/kanye.png");
+    rl.c.ImageColorReplace(&image, rl.c.WHITE, rl.c.BLANK);
+    const texture = rl.c.LoadTextureFromImage(image);
+    rl.c.UnloadImage(image);
 
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box, angView.toVector());
@@ -133,6 +125,10 @@ pub fn main() void {
                 rl.c.DrawSphere(hitPoint, @as(f32, @floatCast(size)), rl.c.ORANGE);
             }
         }
+
+        rl.c.BeginBlendMode(rl.c.BLEND_ALPHA);
+        rl.c.DrawBillboard(camera, texture, kanye, 10, rl.c.WHITE);
+        rl.c.EndBlendMode();
 
         rl.c.DrawGrid(10, 10);
         rl.c.EndMode3D();
