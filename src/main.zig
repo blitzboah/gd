@@ -33,7 +33,7 @@ pub fn main() void {
     var lastMousePosition: rl.c.Vector2 = rl.c.GetMousePosition();
 
     var box: vector3 = .{ .x = 0, .y = 3, .z = 0 };
-    const kanye: vector3 = .{ .x = 0, .y = 5, .z = 60 };
+    var kanye: vector3 = .{ .x = 0, .y = 5, .z = 60 };
     var angView: eangle.EAngle = .{};
 
     const targets = [_]collision.Target{
@@ -58,13 +58,15 @@ pub fn main() void {
     const puffStartSize: f64 = 0.3;
     const puffEndSize: f64 = 0.4;
 
-    var image = rl.c.LoadImage("../assets/kanye.png");
+    var image = rl.c.LoadImage("/home/blitz/sandbox/gd/assets/kanye.png");
     rl.c.ImageColorReplace(&image, rl.c.WHITE, rl.c.BLANK);
     const texture = rl.c.LoadTextureFromImage(image);
+    std.debug.print("texture id: {}\n", .{texture.id});
     rl.c.UnloadImage(image);
 
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box, angView.toVector());
+        movement.MoveTowards(&kanye, box, 10.0);
 
         const mousePosition = rl.c.GetMousePosition();
         const mouseDelta: rl.c.Vector2 = .{

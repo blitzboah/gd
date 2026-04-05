@@ -42,3 +42,16 @@ pub fn update(playerPosition: *rl.c.Vector3, angView: rl.c.Vector3) void {
         velocity.y = 0;
     }
 }
+
+pub fn MoveTowards(a: *rl.c.Vector3, b: rl.c.Vector3, moveSpeed: f32) void {
+    const dir = gmath.sub(b, a.*);
+    const dist = gmath.Length(dir);
+    if (dist < 0.01) return;
+    const norm = gmath.Normalized(dir);
+    const step = moveSpeed * rl.c.GetFrameTime();
+    if (step >= dist) {
+        a.* = b;
+    } else {
+        a.* = gmath.add(a.*, gmath.mul(norm, step));
+    }
+}
