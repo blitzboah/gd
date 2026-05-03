@@ -123,7 +123,7 @@ pub fn main() void {
         // and scaling param here, probably does matrix multiplication but for all dimension
         rl.c.EndBlendMode();
 
-        rl.c.DrawGrid(50, 50);
+        rl.c.DrawGrid(25, 25);
         rl.c.EndMode3D();
 
         const text = rl.c.TextFormat(
