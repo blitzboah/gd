@@ -3,7 +3,7 @@ const aabb = @import("aabb.zig");
 const gmath = @import("math/gmath.zig");
 
 pub const Target = struct {
-    position: rl.c.Vector3,
+    position: *rl.c.Vector3,
     aabbSize: aabb.AABB,
 };
 
@@ -86,7 +86,7 @@ pub fn traceLine(
     var testFraction: f32 = undefined;
 
     for (targets) |target| {
-        const worldBox = target.aabbSize.add(target.position);
+        const worldBox = target.aabbSize.add(target.position.*);
         if (lineAABBIntersection(worldBox, v0, v1, &testIntersection, &testFraction)) {
             if (testFraction < lowestFraction) {
                 lowestFraction = testFraction;

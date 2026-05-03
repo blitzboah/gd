@@ -2,7 +2,6 @@ const std = @import("std");
 const rl = @import("raylib.zig");
 const movement = @import("math/movement.zig");
 const gmath = @import("math/gmath.zig");
-const perlin = @import("perlin.zig");
 const eangle = @import("eangle.zig");
 const collision = @import("collision.zig");
 const aabb = @import("aabb.zig");
@@ -12,10 +11,6 @@ const vector3 = rl.c.Vector3;
 pub fn main() void {
     const screenWidth = 1280;
     const screenHeight = 720;
-
-    perlin.init(69);
-    defer perlin.deinit();
-    perlin.seedNoise(69);
 
     rl.c.InitWindow(screenWidth, screenHeight, "window");
     rl.c.SetTargetFPS(60);
@@ -36,14 +31,14 @@ pub fn main() void {
     var kanye: vector3 = .{ .x = 0, .y = 5, .z = 60 };
     var angView: eangle.EAngle = .{};
 
-    const targets = [_]collision.Target{
-        //     .{
-        //         .position = .{ .x = 0, .y = 0, .z = -15 },
-        //         .aabbSize = .{
-        //             .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
-        //             .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
-        //         },
-        //     },
+    var targets = [_]collision.Target{
+        .{
+            .position = &kanye,
+            .aabbSize = .{
+                .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
+                .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
+            },
+        },
     };
 
     var tracerStart: vector3 = .{ .x = 0, .y = 0, .z = 0 };
@@ -67,6 +62,10 @@ pub fn main() void {
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box, angView.toVector());
         movement.MoveTowards(&kanye, box, 10.0);
+
+        for (0..targets.len) |i| {
+            targets[i].position = targets[i].position;
+        }
 
         const mousePosition = rl.c.GetMousePosition();
         const mouseDelta: rl.c.Vector2 = .{
@@ -106,15 +105,6 @@ pub fn main() void {
 
         rl.c.DrawCube(box, 5, 5, 5, rl.c.BLUE);
 
-        for (targets) |t| {
-            rl.c.DrawCube(t.position, 5, 5, 5, rl.c.RED);
-            const worldBox = t.aabbSize.add(t.position);
-            rl.c.DrawBoundingBox(
-                .{ .min = worldBox.vecMin, .max = worldBox.vecMax },
-                rl.c.GREEN,
-            );
-        }
-
         if (showTracer) {
             rl.c.DrawLine3D(tracerStart, tracerEnd, rl.c.YELLOW);
         }
@@ -129,10 +119,11 @@ pub fn main() void {
         }
 
         rl.c.BeginBlendMode(rl.c.BLEND_ALPHA);
-        rl.c.DrawBillboard(camera, texture, kanye, 10, rl.c.WHITE);
+        rl.c.DrawBillboard(camera, texture, kanye, 10, rl.c.WHITE); // basically billboarding is way to show sprite to camera always facing to it
+        // and scaling param here, probably does matrix multiplication but for all dimension
         rl.c.EndBlendMode();
 
-        rl.c.DrawGrid(10, 10);
+        rl.c.DrawGrid(50, 50);
         rl.c.EndMode3D();
 
         const text = rl.c.TextFormat(
