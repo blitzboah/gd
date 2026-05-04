@@ -5,6 +5,8 @@ const gmath = @import("math/gmath.zig");
 const eangle = @import("eangle.zig");
 const collision = @import("collision.zig");
 const aabb = @import("aabb.zig");
+const rlgl = @cImport(@cInclude("rlgl.h"));
+const bb = @import("billlboard.zig");
 
 const vector3 = rl.c.Vector3;
 
@@ -30,7 +32,8 @@ pub fn main() void {
     var box: vector3 = .{ .x = 0, .y = 3, .z = 0 };
     var kanye: vector3 = .{ .x = 0, .y = 5, .z = 60 };
     var angView: eangle.EAngle = .{};
-
+    var spinAngle: f32 = 0;
+    const spinSpeed = 3;
     var targets = [_]collision.Target{
         .{
             .position = &kanye,
@@ -49,7 +52,7 @@ pub fn main() void {
 
     var timeCreated: f64 = undefined;
     var timeOver: f64 = undefined;
-    const puffTime: f64 = 0.5;
+    const puffTime: f64 = 1.0;
     const puffStartSize: f64 = 0.3;
     const puffEndSize: f64 = 0.4;
 
@@ -112,15 +115,33 @@ pub fn main() void {
         if (showHit) {
             if (rl.c.GetTime() > timeOver) {
                 showHit = false;
+                spinAngle = 0;
             } else {
+                spinAngle += 360 * rl.c.GetFrameTime() * spinSpeed;
                 const size = gmath.Remap(rl.c.GetTime(), timeCreated, timeOver, puffStartSize, puffEndSize);
                 rl.c.DrawSphere(hitPoint, @as(f32, @floatCast(size)), rl.c.ORANGE);
             }
         }
 
         rl.c.BeginBlendMode(rl.c.BLEND_ALPHA);
-        rl.c.DrawBillboard(camera, texture, kanye, 10, rl.c.WHITE); // basically billboarding is way to show sprite to camera always facing to it
+
+        // const source = rl.c.Rectangle{
+        //     .x = 0,
+        //     .y = 0,
+        //     .width = @floatFromInt(texture.width),
+        //     .height = @floatFromInt(texture.height),
+        // };
+
+        // const size = rl.c.Vector2{ .x = 10, .y = 10 };
+        // const origin = rl.c.Vector2{ .x = 5, .y = 5 };
+
+        bb.drawBillboard(texture, kanye, 10, spinAngle);
+        // fuck it let's implement it, cuz raylib's kinda baked axis shit
+
+        // rl.c.DrawBillboardPro(camera, texture, source, kanye, .{ .x = 0, .y = 1, .z = 0 }, size, origin, if (showHit) spinAngle else 0, rl.c.WHITE);
+        // basically billboarding is way to show sprite to camera always facing to it
         // and scaling param here, probably does matrix multiplication but for all dimension
+
         rl.c.EndBlendMode();
 
         rl.c.DrawGrid(25, 25);
