@@ -99,6 +99,33 @@ pub fn main() void {
             }
         }
 
+        // matrix for char movement
+        var vecForward: rl.c.Vector3 = angView.toVector();
+        vecForward.y = 0;
+        vecForward = gmath.Normalized(vecForward);
+
+        const vecUp = rl.c.Vector3{ .x = 0, .y = 1, .z = 0 };
+        const vecRight = gmath.Normalized(gmath.crossProduct(gmath.mul(vecUp, -1), vecForward));
+
+        const mat = rl.c.Matrix{
+            .m0 = vecForward.x,
+            .m4 = vecUp.x,
+            .m8 = vecRight.x,
+            .m12 = box.x,
+            .m1 = vecForward.y,
+            .m5 = vecUp.y,
+            .m9 = vecRight.y,
+            .m13 = box.y,
+            .m2 = vecForward.z,
+            .m6 = vecUp.z,
+            .m10 = vecRight.z,
+            .m14 = box.z,
+            .m3 = 0,
+            .m7 = 0,
+            .m11 = 0,
+            .m15 = 1,
+        };
+
         // draw
         rl.c.BeginDrawing();
         defer rl.c.EndDrawing();
@@ -106,7 +133,12 @@ pub fn main() void {
 
         rl.c.BeginMode3D(camera);
 
+        rlgl.rlPushMatrix();
+        rlgl.rlMultMatrixf(&mat.m0);
+
         rl.c.DrawCube(box, 5, 5, 5, rl.c.BLUE);
+
+        rlgl.rlPopMatrix();
 
         if (showTracer) {
             rl.c.DrawLine3D(tracerStart, tracerEnd, rl.c.YELLOW);
@@ -115,7 +147,6 @@ pub fn main() void {
         if (showHit) {
             if (rl.c.GetTime() > timeOver) {
                 showHit = false;
-                spinAngle = 0;
             } else {
                 spinAngle += 360 * rl.c.GetFrameTime() * spinSpeed;
                 const size = gmath.Remap(rl.c.GetTime(), timeCreated, timeOver, puffStartSize, puffEndSize);
@@ -135,7 +166,7 @@ pub fn main() void {
         // const size = rl.c.Vector2{ .x = 10, .y = 10 };
         // const origin = rl.c.Vector2{ .x = 5, .y = 5 };
 
-        bb.drawBillboard(texture, kanye, 10, spinAngle);
+        bb.drawBillboard(camera, texture, kanye, 10, spinAngle, showHit);
         // fuck it let's implement it, cuz raylib's kinda baked axis shit
 
         // rl.c.DrawBillboardPro(camera, texture, source, kanye, .{ .x = 0, .y = 1, .z = 0 }, size, origin, if (showHit) spinAngle else 0, rl.c.WHITE);

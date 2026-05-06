@@ -3,13 +3,29 @@ const rl = @import("raylib.zig");
 const std = @import("std");
 const gmath = @import("math/gmath.zig");
 
-pub fn drawBillboard(tex: rl.c.Texture2D, pos: rl.c.Vector3, size: f32, angle: f32) void {
+fn applySpinY(vecRight: rl.c.Vector3, angle: f32) rl.c.Vector3 {
     const rad = angle * std.math.pi / 180.0;
     const c = @cos(rad);
     const s = @sin(rad);
 
-    const vecRight = rl.c.Vector3{ .x = c, .y = 0, .z = -s };
-    const vecUp = rl.c.Vector3{ .x = 0, .y = 1, .z = 0 };
+    return rl.c.Vector3{
+        .x = vecRight.x * c - vecRight.z * s,
+        .y = vecRight.y,
+        .z = -vecRight.x * s + vecRight.z * c,
+    };
+}
+
+pub fn drawBillboard(camera: rl.c.Camera3D, tex: rl.c.Texture2D, pos: rl.c.Vector3, size: f32, angle: f32, isShot: bool) void {
+    const vecGlobalUp = rl.c.Vector3{ .x = 0, .y = 1, .z = 0 };
+
+    const vecForward = gmath.Normalized(gmath.sub(pos, camera.position));
+    var vecRight = gmath.Normalized(gmath.crossProduct(vecGlobalUp, vecForward));
+
+    if (isShot) {
+        vecRight = gmath.Normalized(applySpinY(vecRight, angle));
+    }
+
+    const vecUp = if (isShot) vecGlobalUp else gmath.Normalized(gmath.crossProduct(vecForward, vecRight));
 
     const half = size / 2.0;
     const tl = gmath.add(pos, gmath.add(gmath.mul(vecRight, -half), gmath.mul(vecUp, half)));
