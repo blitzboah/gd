@@ -23,8 +23,8 @@ pub fn update(playerPosition: *rl.c.Vector3, angView: rl.c.Vector3) void {
         velocity.y = jump_velocity.y;
     }
 
-    vecMovement.x = gmath.Approach(vecMovement.x, goalVelocity.x, rl.c.GetFrameTime() * 60);
-    vecMovement.z = gmath.Approach(vecMovement.z, goalVelocity.z, rl.c.GetFrameTime() * 60);
+    vecMovement.x = gmath.Approach(vecMovement.x, goalVelocity.x, rl.c.GetFrameTime() * 200);
+    vecMovement.z = gmath.Approach(vecMovement.z, goalVelocity.z, rl.c.GetFrameTime() * 200);
 
     var vecForward = angView;
     vecForward.y = 0;

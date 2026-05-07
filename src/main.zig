@@ -100,6 +100,7 @@ pub fn main() void {
         }
 
         // matrix for char movement
+
         var vecForward: rl.c.Vector3 = angView.toVector();
         vecForward.y = 0;
         vecForward = gmath.Normalized(vecForward);
@@ -108,25 +109,25 @@ pub fn main() void {
         const vecRight = gmath.Normalized(gmath.crossProduct(gmath.mul(vecUp, -1), vecForward));
 
         const mat = rl.c.Matrix{
-            .m0 = vecForward.x,
-            .m4 = vecUp.x,
-            .m8 = vecRight.x,
-            .m12 = box.x,
-            .m1 = vecForward.y,
-            .m5 = vecUp.y,
-            .m9 = vecRight.y,
-            .m13 = box.y,
-            .m2 = vecForward.z,
-            .m6 = vecUp.z,
-            .m10 = vecRight.z,
-            .m14 = box.z,
+            .m0 = vecRight.x,
+            .m1 = vecRight.y,
+            .m2 = vecRight.z,
             .m3 = 0,
+            .m4 = vecUp.x,
+            .m5 = vecUp.y,
+            .m6 = vecUp.z,
             .m7 = 0,
+            .m8 = vecForward.x,
+            .m9 = vecForward.y,
+            .m10 = vecForward.z,
             .m11 = 0,
+            .m12 = 0,
+            .m13 = 0,
+            .m14 = 0,
             .m15 = 1,
         };
-
         // draw
+
         rl.c.BeginDrawing();
         defer rl.c.EndDrawing();
         rl.c.ClearBackground(rl.c.BLACK);
@@ -134,9 +135,10 @@ pub fn main() void {
         rl.c.BeginMode3D(camera);
 
         rlgl.rlPushMatrix();
-        rlgl.rlMultMatrixf(&mat.m0);
 
-        rl.c.DrawCube(box, 5, 5, 5, rl.c.BLUE);
+        rlgl.rlTranslatef(box.x, box.y, box.z);
+        rlgl.rlMultMatrixf(&mat.m0);
+        rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 5, 5, 5, rl.c.BLUE);
 
         rlgl.rlPopMatrix();
 
