@@ -5,7 +5,10 @@ const gmath = @import("math/gmath.zig");
 const eangle = @import("eangle.zig");
 const collision = @import("collision.zig");
 const aabb = @import("aabb.zig");
-const rlgl = @cImport(@cInclude("rlgl.h"));
+const rlgl = @cImport({
+    @cInclude("raymath.h");
+    @cInclude("rlgl.h");
+});
 const bb = @import("billlboard.zig");
 
 const vector3 = rl.c.Vector3;
@@ -101,6 +104,8 @@ pub fn main() void {
 
         // matrix for char movement
 
+        // const playerTranslation = rlgl.MatrixTranslate(box.x, box.y, box.z);
+
         var vecForward: rl.c.Vector3 = angView.toVector();
         vecForward.y = 0;
         vecForward = gmath.Normalized(vecForward);
@@ -108,24 +113,31 @@ pub fn main() void {
         const vecUp = rl.c.Vector3{ .x = 0, .y = 1, .z = 0 };
         const vecRight = gmath.Normalized(gmath.crossProduct(gmath.mul(vecUp, -1), vecForward));
 
-        const mat = rl.c.Matrix{
+        const playerRotation = rlgl.Matrix{
             .m0 = vecRight.x,
-            .m1 = vecRight.y,
-            .m2 = vecRight.z,
-            .m3 = 0,
-            .m4 = vecUp.x,
-            .m5 = vecUp.y,
-            .m6 = vecUp.z,
-            .m7 = 0,
-            .m8 = vecForward.x,
-            .m9 = vecForward.y,
-            .m10 = vecForward.z,
-            .m11 = 0,
+            .m4 = vecRight.y,
+            .m8 = vecRight.z,
             .m12 = 0,
+
+            .m1 = vecUp.x,
+            .m5 = vecUp.y,
+            .m9 = vecUp.z,
             .m13 = 0,
+
+            .m2 = vecForward.x,
+            .m6 = vecForward.y,
+            .m10 = vecForward.z,
             .m14 = 0,
+
+            .m3 = 0,
+            .m7 = 0,
+            .m11 = 0,
             .m15 = 1,
         };
+
+        const playerScale = rlgl.MatrixScale(5, 5, 5);
+
+        const playerTransform = rlgl.MatrixMultiply(playerRotation, playerScale);
         // draw
 
         rl.c.BeginDrawing();
@@ -134,11 +146,13 @@ pub fn main() void {
 
         rl.c.BeginMode3D(camera);
 
+        placeProps();
         rlgl.rlPushMatrix();
 
         rlgl.rlTranslatef(box.x, box.y, box.z);
-        rlgl.rlMultMatrixf(&mat.m0);
-        rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 5, 5, 5, rl.c.BLUE);
+
+        rlgl.rlMultMatrixf(&playerTransform.m0);
+        rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 1, 1, 1, rl.c.BLUE);
 
         rlgl.rlPopMatrix();
 
@@ -198,4 +212,18 @@ pub fn main() void {
         camera.target = box;
         camera.position = gmath.sub(box, gmath.mul(angView.toVector(), cameraOffset));
     }
+}
+
+fn placeProps() void {
+    const mScaling = rlgl.MatrixScale(5, 10, 5);
+    const mRotation = rlgl.MatrixRotate(.{ .x = 0, .y = 1, .z = 0 }, 30);
+    const mTranslation = rlgl.MatrixTranslate(20, 5, 20);
+
+    // TRS
+    const mTransform = rlgl.MatrixMultiply(rlgl.MatrixMultiply(mTranslation, mRotation), mScaling);
+
+    rlgl.rlPushMatrix();
+    rlgl.rlMultMatrixf(&mTransform.m0);
+    rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 1, 1, 1, rl.c.RED);
+    rlgl.rlPopMatrix();
 }
