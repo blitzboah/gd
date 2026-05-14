@@ -67,7 +67,7 @@ pub fn main() void {
 
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box, angView.toVector());
-        movement.MoveTowards(&kanye, box, 10.0);
+        // movement.MoveTowards(&kanye, box, 10.0);
 
         for (0..targets.len) |i| {
             targets[i].position = targets[i].position;
@@ -146,7 +146,7 @@ pub fn main() void {
 
         rl.c.BeginMode3D(camera);
 
-        placeProps();
+        //placeProps();
         rlgl.rlPushMatrix();
 
         rlgl.rlTranslatef(box.x, box.y, box.z);
