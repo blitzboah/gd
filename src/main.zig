@@ -146,7 +146,7 @@ pub fn main() void {
 
         rl.c.BeginMode3D(camera);
 
-        //placeProps();
+        placeProps();
         rlgl.rlPushMatrix();
 
         rlgl.rlTranslatef(box.x, box.y, box.z);
@@ -217,7 +217,7 @@ pub fn main() void {
 fn placeProps() void {
     const mScaling = rlgl.MatrixScale(5, 10, 5);
     const mRotation = rlgl.MatrixRotate(.{ .x = 0, .y = 1, .z = 0 }, 30);
-    const mTranslation = rlgl.MatrixTranslate(20, 5, 20);
+    const mTranslation = rlgl.MatrixTranslate(0, 5, 0);
 
     // TRS
     const mTransform = rlgl.MatrixMultiply(rlgl.MatrixMultiply(mTranslation, mRotation), mScaling);
