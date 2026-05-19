@@ -13,6 +13,33 @@ const bb = @import("billlboard.zig");
 
 const vector3 = rl.c.Vector3;
 
+pub const Entity = struct {
+    mTransform: rlgl.Matrix,
+    mTransformInverse: rlgl.Matrix,
+
+    pub fn SetTransform(self: *Entity, vecScaling: rl.c.Vector3, flTheta: f32, vecRotationAxis: rl.c.Vector3, vecTranslation: rl.c.Vector3) void {
+        const mScaling = rlgl.MatrixScale(vecScaling.x, vecScaling.y, vecScaling.z);
+        const mRotation = rlgl.MatrixRotate(@bitCast(vecRotationAxis), flTheta);
+        const mTranslation = rlgl.MatrixTranslate(vecTranslation.x, vecTranslation.y, vecTranslation.z);
+
+        self.mTransform = rlgl.MatrixMultiply(rlgl.MatrixMultiply(mTranslation, mRotation), mScaling);
+
+        const mScalingInverse = rlgl.MatrixScale(1 / mScaling.m0, 1 / mScaling.m5, 1 / mScaling.m10);
+        const mRotationInverse = rlgl.MatrixTranspose(mRotation);
+        const mTranslationInverse = rlgl.MatrixTranslate(-vecTranslation.x, -vecTranslation.y, -vecTranslation.z);
+
+        self.mTransformInverse = rlgl.MatrixMultiply(rlgl.MatrixMultiply(mScalingInverse, mRotationInverse), mTranslationInverse);
+    }
+
+    pub fn getPosition(self: *Entity) rl.c.Vector3 {
+        return .{
+            .x = self.mTransform.m12,
+            .y = self.mTransform.m13,
+            .z = self.mTransform.m14,
+        };
+    }
+};
+
 pub fn main() void {
     const screenWidth = 1280;
     const screenHeight = 720;
@@ -33,19 +60,9 @@ pub fn main() void {
     var lastMousePosition: rl.c.Vector2 = rl.c.GetMousePosition();
 
     var box: vector3 = .{ .x = 0, .y = 3, .z = 0 };
-    var kanye: vector3 = .{ .x = 0, .y = 5, .z = 60 };
     var angView: eangle.EAngle = .{};
     var spinAngle: f32 = 0;
     const spinSpeed = 3;
-    var targets = [_]collision.Target{
-        .{
-            .position = &kanye,
-            .aabbSize = .{
-                .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
-                .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
-            },
-        },
-    };
 
     var tracerStart: vector3 = .{ .x = 0, .y = 0, .z = 0 };
     var tracerEnd: vector3 = .{ .x = 0, .y = 0, .z = 0 };
@@ -59,6 +76,31 @@ pub fn main() void {
     const puffStartSize: f64 = 0.3;
     const puffEndSize: f64 = 0.4;
 
+    var prop1: Entity = .{
+        .mTransform = rlgl.MatrixIdentity(),
+        .mTransformInverse = rlgl.MatrixIdentity(),
+    };
+    var kanye: Entity = .{
+        .mTransform = rlgl.MatrixIdentity(),
+        .mTransformInverse = rlgl.MatrixIdentity(),
+    };
+
+    var kanyePos: vector3 = .{ .x = 10, .y = 0, .z = 10 };
+
+    var targets = [_]collision.Target{ .{
+        .entity = &kanye,
+        .aabbSize = .{
+            .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
+            .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
+        },
+    }, .{
+        .entity = &prop1,
+        .aabbSize = .{
+            .vecMin = .{ .x = -0.5, .y = -0.5, .z = -0.5 },
+            .vecMax = .{ .x = 0.5, .y = 0.5, .z = 0.5 },
+        },
+    } };
+
     var image = rl.c.LoadImage("/home/blitz/sandbox/gd/assets/kanye.png");
     rl.c.ImageColorReplace(&image, rl.c.WHITE, rl.c.BLANK);
     const texture = rl.c.LoadTextureFromImage(image);
@@ -67,11 +109,7 @@ pub fn main() void {
 
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box, angView.toVector());
-        // movement.MoveTowards(&kanye, box, 10.0);
-
-        for (0..targets.len) |i| {
-            targets[i].position = targets[i].position;
-        }
+        movement.MoveTowards(&kanyePos, box, 10.0);
 
         const mousePosition = rl.c.GetMousePosition();
         const mouseDelta: rl.c.Vector2 = .{
@@ -101,6 +139,20 @@ pub fn main() void {
                 tracerEnd = v1;
             }
         }
+
+        prop1.SetTransform(
+            .{ .x = 5, .y = 10, .z = 5 }, // scale
+            30.0 * std.math.pi / 180.0, // theta (radians)
+            .{ .x = 0, .y = 1, .z = 0 }, // axis
+            .{ .x = 0, .y = 5, .z = 0 }, // translation
+        );
+
+        kanye.SetTransform(
+            .{ .x = 4, .y = 1, .z = 1 },
+            0,
+            .{ .x = 0, .y = 1, .z = 0 },
+            kanyePos,
+        );
 
         // matrix for char movement
 
@@ -146,10 +198,12 @@ pub fn main() void {
 
         rl.c.BeginMode3D(camera);
 
-        placeProps();
+        placeProps(&prop1);
         rlgl.rlPushMatrix();
 
         rlgl.rlTranslatef(box.x, box.y, box.z);
+
+        bb.drawBillboard(camera, texture, kanye.getPosition(), 10, spinAngle, showHit);
 
         rlgl.rlMultMatrixf(&playerTransform.m0);
         rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 1, 1, 1, rl.c.BLUE);
@@ -182,7 +236,6 @@ pub fn main() void {
         // const size = rl.c.Vector2{ .x = 10, .y = 10 };
         // const origin = rl.c.Vector2{ .x = 5, .y = 5 };
 
-        bb.drawBillboard(camera, texture, kanye, 10, spinAngle, showHit);
         // fuck it let's implement it, cuz raylib's kinda baked axis shit
 
         // rl.c.DrawBillboardPro(camera, texture, source, kanye, .{ .x = 0, .y = 1, .z = 0 }, size, origin, if (showHit) spinAngle else 0, rl.c.WHITE);
@@ -214,16 +267,9 @@ pub fn main() void {
     }
 }
 
-fn placeProps() void {
-    const mScaling = rlgl.MatrixScale(5, 10, 5);
-    const mRotation = rlgl.MatrixRotate(.{ .x = 0, .y = 1, .z = 0 }, 30);
-    const mTranslation = rlgl.MatrixTranslate(0, 5, 0);
-
-    // TRS
-    const mTransform = rlgl.MatrixMultiply(rlgl.MatrixMultiply(mTranslation, mRotation), mScaling);
-
+fn placeProps(p: *Entity) void {
     rlgl.rlPushMatrix();
-    rlgl.rlMultMatrixf(&mTransform.m0);
+    rlgl.rlMultMatrixf(&p.mTransform.m0);
     rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 1, 1, 1, rl.c.RED);
     rlgl.rlPopMatrix();
 }

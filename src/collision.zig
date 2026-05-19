@@ -1,9 +1,11 @@
 const rl = @import("raylib.zig");
 const aabb = @import("aabb.zig");
 const gmath = @import("math/gmath.zig");
+const main = @import("main.zig");
+const rlgl = @cImport(@cInclude("rlgl.h"));
 
 pub const Target = struct {
-    position: *rl.c.Vector3,
+    entity: *main.Entity,
     aabbSize: aabb.AABB,
 };
 
@@ -86,15 +88,27 @@ pub fn traceLine(
     var testFraction: f32 = undefined;
 
     for (targets) |target| {
-        const worldBox = target.aabbSize.add(target.position.*);
-        if (lineAABBIntersection(worldBox, v0, v1, &testIntersection, &testFraction)) {
+        // transform ray into object local space
+        const localV0 = transformPoint(v0, @bitCast(target.entity.mTransformInverse));
+        const localV1 = transformPoint(v1, @bitCast(target.entity.mTransformInverse));
+
+        if (lineAABBIntersection(target.aabbSize, localV0, localV1, &testIntersection, &testFraction)) {
             if (testFraction < lowestFraction) {
                 lowestFraction = testFraction;
-                vecIntersection.* = testIntersection;
+                // transform intersection point back to world space
+                vecIntersection.* = transformPoint(testIntersection, @bitCast(target.entity.mTransform));
                 hit = true;
             }
         }
     }
 
     return hit;
+}
+
+fn transformPoint(v: rl.c.Vector3, m: rlgl.Matrix) rl.c.Vector3 {
+    return .{
+        .x = m.m0 * v.x + m.m4 * v.y + m.m8 * v.z + m.m12,
+        .y = m.m1 * v.x + m.m5 * v.y + m.m9 * v.z + m.m13,
+        .z = m.m2 * v.x + m.m6 * v.y + m.m10 * v.z + m.m14,
+    };
 }
