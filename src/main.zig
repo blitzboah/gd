@@ -22,13 +22,13 @@ pub const Entity = struct {
         const mRotation = rlgl.MatrixRotate(@bitCast(vecRotationAxis), flTheta);
         const mTranslation = rlgl.MatrixTranslate(vecTranslation.x, vecTranslation.y, vecTranslation.z);
 
-        self.mTransform = rlgl.MatrixMultiply(rlgl.MatrixMultiply(mTranslation, mRotation), mScaling);
+        self.mTransform =
+            rlgl.MatrixMultiply(
+                mScaling,
+                rlgl.MatrixMultiply(mRotation, mTranslation),
+            ); // this works because raylib uses column-major shit ig
 
-        const mScalingInverse = rlgl.MatrixScale(1 / mScaling.m0, 1 / mScaling.m5, 1 / mScaling.m10);
-        const mRotationInverse = rlgl.MatrixTranspose(mRotation);
-        const mTranslationInverse = rlgl.MatrixTranslate(-vecTranslation.x, -vecTranslation.y, -vecTranslation.z);
-
-        self.mTransformInverse = rlgl.MatrixMultiply(rlgl.MatrixMultiply(mScalingInverse, mRotationInverse), mTranslationInverse);
+        self.mTransformInverse = rlgl.MatrixInvert(self.mTransform);
     }
 
     pub fn getPosition(self: *Entity) rl.c.Vector3 {
@@ -66,7 +66,7 @@ pub fn main() void {
 
     var tracerStart: vector3 = .{ .x = 0, .y = 0, .z = 0 };
     var tracerEnd: vector3 = .{ .x = 0, .y = 0, .z = 0 };
-    var showTracer = false;
+    const showTracer = true;
     var hitPoint: vector3 = .{ .x = 0, .y = 0, .z = 0 };
     var showHit = false;
 
@@ -90,8 +90,8 @@ pub fn main() void {
     var targets = [_]collision.Target{ .{
         .entity = &kanye,
         .aabbSize = .{
-            .vecMin = .{ .x = -2.5, .y = -2.5, .z = -2.5 },
-            .vecMax = .{ .x = 2.5, .y = 2.5, .z = 2.5 },
+            .vecMin = .{ .x = -0.5, .y = -0.5, .z = -0.5 },
+            .vecMax = .{ .x = 0.5, .y = 0.5, .z = 0.5 },
         },
     }, .{
         .entity = &prop1,
@@ -110,7 +110,19 @@ pub fn main() void {
     while (!rl.c.WindowShouldClose()) {
         movement.update(&box, angView.toVector());
         movement.MoveTowards(&kanyePos, box, 10.0);
+        prop1.SetTransform(
+            .{ .x = 5, .y = 10, .z = 5 }, // scale
+            30.0 * std.math.pi / 180.0, // theta (radians)
+            .{ .x = 0, .y = 1, .z = 0 }, // axis
+            .{ .x = 0, .y = 5, .z = 0 }, // translation
+        );
 
+        kanye.SetTransform(
+            .{ .x = 4, .y = 1, .z = 1 },
+            0,
+            .{ .x = 0, .y = 1, .z = 0 },
+            kanyePos,
+        );
         const mousePosition = rl.c.GetMousePosition();
         const mouseDelta: rl.c.Vector2 = .{
             .x = mousePosition.x - lastMousePosition.x,
@@ -124,7 +136,6 @@ pub fn main() void {
             const v1 = gmath.add(v0, gmath.mul(angView.toVector(), 100));
 
             tracerStart = v0;
-            showTracer = true;
             showHit = false;
 
             var vecIntersection: vector3 = undefined;
@@ -139,20 +150,6 @@ pub fn main() void {
                 tracerEnd = v1;
             }
         }
-
-        prop1.SetTransform(
-            .{ .x = 5, .y = 10, .z = 5 }, // scale
-            30.0 * std.math.pi / 180.0, // theta (radians)
-            .{ .x = 0, .y = 1, .z = 0 }, // axis
-            .{ .x = 0, .y = 5, .z = 0 }, // translation
-        );
-
-        kanye.SetTransform(
-            .{ .x = 4, .y = 1, .z = 1 },
-            0,
-            .{ .x = 0, .y = 1, .z = 0 },
-            kanyePos,
-        );
 
         // matrix for char movement
 
@@ -198,12 +195,14 @@ pub fn main() void {
 
         rl.c.BeginMode3D(camera);
 
-        placeProps(&prop1);
+        drawEntity(&prop1);
+        drawEntity(&kanye);
+
+        bb.drawBillboard(camera, texture, kanyePos, 10, spinAngle, showHit);
+
         rlgl.rlPushMatrix();
 
         rlgl.rlTranslatef(box.x, box.y, box.z);
-
-        bb.drawBillboard(camera, texture, kanye.getPosition(), 10, spinAngle, showHit);
 
         rlgl.rlMultMatrixf(&playerTransform.m0);
         rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 1, 1, 1, rl.c.BLUE);
@@ -253,7 +252,9 @@ pub fn main() void {
             box.y,
             box.z,
         );
+        const kanyePosText = rl.c.TextFormat("kanye: %.1f, %.1f, %.1f", kanyePos.x, kanyePos.y, kanyePos.z);
         rl.c.DrawText(text, 10, 10, 20, rl.c.WHITE);
+        rl.c.DrawText(kanyePosText, 10, 30, 20, rl.c.BLUE);
         if (showHit) {
             rl.c.DrawText("HIT!", 10, 35, 20, rl.c.ORANGE);
         }
@@ -267,9 +268,16 @@ pub fn main() void {
     }
 }
 
-fn placeProps(p: *Entity) void {
+fn drawEntity(p: *Entity) void {
     rlgl.rlPushMatrix();
     rlgl.rlMultMatrixf(&p.mTransform.m0);
     rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 1, 1, 1, rl.c.RED);
+    rl.c.DrawCubeWires(
+        .{ .x = 0, .y = 0, .z = 0 },
+        1, // max.x - min.x
+        1, // max.y - min.y
+        1, // max.z - min.z
+        rl.c.GREEN,
+    );
     rlgl.rlPopMatrix();
 }

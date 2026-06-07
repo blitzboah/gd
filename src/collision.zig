@@ -3,6 +3,7 @@ const aabb = @import("aabb.zig");
 const gmath = @import("math/gmath.zig");
 const main = @import("main.zig");
 const rlgl = @cImport(@cInclude("rlgl.h"));
+const std = @import("std");
 
 pub const Target = struct {
     entity: *main.Entity,
@@ -34,6 +35,14 @@ fn clipLine(d: u2, aabbBox: aabb.AABB, v0: rl.c.Vector3, v1: rl.c.Vector3, f_low
         2 => v1.z,
         else => unreachable,
     };
+
+    const delta = ray1 - ray0;
+
+    if (@abs(delta) < 0.00001) {
+        if (ray0 < box_min or ray0 > box_max) return false;
+
+        return true;
+    }
 
     var f_dim_low = (box_min - ray0) / (ray1 - ray0);
     var f_dim_high = (box_max - ray0) / (ray1 - ray0);
