@@ -10,25 +10,31 @@ const rlgl = @cImport({
     @cInclude("rlgl.h");
 });
 const bb = @import("billlboard.zig");
+const frustum = @import("frustum.zig");
 
 const vector3 = rl.c.Vector3;
 
 pub const Entity = struct {
     mTransform: rlgl.Matrix,
     mTransformInverse: rlgl.Matrix,
+    boundingRadius: f32 = 0,
 
     pub fn SetTransform(self: *Entity, vecScaling: rl.c.Vector3, flTheta: f32, vecRotationAxis: rl.c.Vector3, vecTranslation: rl.c.Vector3) void {
         const mScaling = rlgl.MatrixScale(vecScaling.x, vecScaling.y, vecScaling.z);
         const mRotation = rlgl.MatrixRotate(@bitCast(vecRotationAxis), flTheta);
         const mTranslation = rlgl.MatrixTranslate(vecTranslation.x, vecTranslation.y, vecTranslation.z);
 
-        self.mTransform =
-            rlgl.MatrixMultiply(
-                mScaling,
-                rlgl.MatrixMultiply(mRotation, mTranslation),
-            ); // this works because raylib uses column-major shit ig
+        self.mTransform = rlgl.MatrixTranspose(rlgl.MatrixMultiply(
+            mScaling,
+            rlgl.MatrixMultiply(mRotation, mTranslation),
+        ));
 
         self.mTransformInverse = rlgl.MatrixInvert(self.mTransform);
+
+        const hx = vecScaling.x * 0.5;
+        const hy = vecScaling.y * 0.5;
+        const hz = vecScaling.z * 0.5;
+        self.boundingRadius = gmath.LengthSquared(.{ .x = hx, .y = hy, .z = hz });
     }
 
     pub fn getPosition(self: *Entity) rl.c.Vector3 {
@@ -59,6 +65,7 @@ pub fn main() void {
     const mouseSensi = 0.1;
     var lastMousePosition: rl.c.Vector2 = rl.c.GetMousePosition();
 
+    var entityCount: u64 = 0;
     var box: vector3 = .{ .x = 0, .y = 3, .z = 0 };
     var angView: eangle.EAngle = .{};
     var spinAngle: f32 = 0;
@@ -85,21 +92,36 @@ pub fn main() void {
         .mTransformInverse = rlgl.MatrixIdentity(),
     };
 
+    var prop2: Entity = .{
+        .mTransform = rlgl.MatrixIdentity(),
+        .mTransformInverse = rlgl.MatrixIdentity(),
+    };
+
     var kanyePos: vector3 = .{ .x = 10, .y = 0, .z = 10 };
 
-    var targets = [_]collision.Target{ .{
-        .entity = &kanye,
-        .aabbSize = .{
-            .vecMin = .{ .x = -0.5, .y = -0.5, .z = -0.5 },
-            .vecMax = .{ .x = 0.5, .y = 0.5, .z = 0.5 },
+    var targets = [_]collision.Target{
+        .{
+            .entity = &kanye,
+            .aabbSize = .{
+                .vecMin = .{ .x = -0.5, .y = -0.5, .z = -0.5 },
+                .vecMax = .{ .x = 0.5, .y = 0.5, .z = 0.5 },
+            },
         },
-    }, .{
-        .entity = &prop1,
-        .aabbSize = .{
-            .vecMin = .{ .x = -0.5, .y = -0.5, .z = -0.5 },
-            .vecMax = .{ .x = 0.5, .y = 0.5, .z = 0.5 },
+        .{
+            .entity = &prop1,
+            .aabbSize = .{
+                .vecMin = .{ .x = -0.5, .y = -0.5, .z = -0.5 },
+                .vecMax = .{ .x = 0.5, .y = 0.5, .z = 0.5 },
+            },
         },
-    } };
+        .{
+            .entity = &prop2,
+            .aabbSize = .{
+                .vecMin = .{ .x = -0.5, .y = -0.5, .z = -0.5 },
+                .vecMax = .{ .x = 0.5, .y = 0.5, .z = 0.5 },
+            },
+        },
+    };
 
     var image = rl.c.LoadImage("/home/blitz/sandbox/gd/assets/kanye.png");
     rl.c.ImageColorReplace(&image, rl.c.WHITE, rl.c.BLANK);
@@ -107,14 +129,27 @@ pub fn main() void {
     std.debug.print("texture id: {}\n", .{texture.id});
     rl.c.UnloadImage(image);
 
+    camera.target = box;
+    camera.position = gmath.sub(box, gmath.mul(angView.toVector(), cameraOffset));
+
+    var f: frustum.Frustum = undefined;
+
     while (!rl.c.WindowShouldClose()) {
+        entityCount = 0;
         movement.update(&box, angView.toVector());
         movement.MoveTowards(&kanyePos, box, 10.0);
         prop1.SetTransform(
             .{ .x = 5, .y = 10, .z = 5 }, // scale
             30.0 * std.math.pi / 180.0, // theta (radians)
             .{ .x = 0, .y = 1, .z = 0 }, // axis
-            .{ .x = 0, .y = 5, .z = 0 }, // translation
+            .{ .x = 50, .y = 5, .z = 0 }, // translation
+        );
+
+        prop2.SetTransform(
+            .{ .x = 5, .y = 1, .z = 5 }, // scale
+            0, // theta (radians)
+            .{ .x = 0, .y = 1, .z = 0 }, // axis
+            .{ .x = 10, .y = 5, .z = 0 }, // translation
         );
 
         kanye.SetTransform(
@@ -129,6 +164,13 @@ pub fn main() void {
             .y = mousePosition.y - lastMousePosition.y,
         };
         lastMousePosition = mousePosition;
+
+        angView.p -= mouseDelta.y * mouseSensi;
+        angView.y += mouseDelta.x * mouseSensi;
+        angView.normalize();
+
+        camera.target = box;
+        camera.position = gmath.sub(box, gmath.mul(angView.toVector(), cameraOffset));
 
         // shooting
         if (rl.c.IsMouseButtonPressed(rl.c.MOUSE_BUTTON_LEFT)) {
@@ -184,6 +226,21 @@ pub fn main() void {
             .m15 = 1,
         };
 
+        const v = rlgl.MatrixLookAt(
+            @bitCast(camera.position),
+            @bitCast(camera.target),
+            @bitCast(camera.up),
+        );
+
+        const p = rlgl.MatrixPerspective(
+            camera.fovy * std.math.pi / 180.0,
+            @as(f32, screenWidth) / @as(f32, screenHeight),
+            0.1,
+            100,
+        );
+        const vp = rlgl.MatrixMultiply(v, p);
+        f = frustum.Frustum.init(@bitCast(vp));
+
         const playerScale = rlgl.MatrixScale(5, 5, 5);
 
         const playerTransform = rlgl.MatrixMultiply(playerRotation, playerScale);
@@ -194,9 +251,14 @@ pub fn main() void {
         rl.c.ClearBackground(rl.c.BLACK);
 
         rl.c.BeginMode3D(camera);
-
-        drawEntity(&prop1);
-        drawEntity(&kanye);
+        if (f.containsSphere(prop1.getPosition(), prop1.boundingRadius)) {
+            entityCount += 1;
+            drawEntity(&prop1);
+        }
+        if (f.containsSphere(prop2.getPosition(), prop2.boundingRadius)) {
+            entityCount += 1;
+            drawEntity(&prop2);
+        }
 
         bb.drawBillboard(camera, texture, kanyePos, 10, spinAngle, showHit);
 
@@ -252,32 +314,18 @@ pub fn main() void {
             box.y,
             box.z,
         );
-        const kanyePosText = rl.c.TextFormat("kanye: %.1f, %.1f, %.1f", kanyePos.x, kanyePos.y, kanyePos.z);
+        const entityCountText = rl.c.TextFormat("rendered entity count: %d", entityCount);
         rl.c.DrawText(text, 10, 10, 20, rl.c.WHITE);
-        rl.c.DrawText(kanyePosText, 10, 30, 20, rl.c.BLUE);
+        rl.c.DrawText(entityCountText, 10, 30, 20, rl.c.BLUE);
         if (showHit) {
             rl.c.DrawText("HIT!", 10, 35, 20, rl.c.ORANGE);
         }
-
-        angView.p -= mouseDelta.y * mouseSensi;
-        angView.y += mouseDelta.x * mouseSensi;
-        angView.normalize();
-
-        camera.target = box;
-        camera.position = gmath.sub(box, gmath.mul(angView.toVector(), cameraOffset));
     }
 }
 
 fn drawEntity(p: *Entity) void {
     rlgl.rlPushMatrix();
-    rlgl.rlMultMatrixf(&p.mTransform.m0);
+    rlgl.rlMultMatrixf(@ptrCast(&p.mTransform));
     rl.c.DrawCube(.{ .x = 0, .y = 0, .z = 0 }, 1, 1, 1, rl.c.RED);
-    rl.c.DrawCubeWires(
-        .{ .x = 0, .y = 0, .z = 0 },
-        1, // max.x - min.x
-        1, // max.y - min.y
-        1, // max.z - min.z
-        rl.c.GREEN,
-    );
     rlgl.rlPopMatrix();
 }

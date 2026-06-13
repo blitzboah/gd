@@ -139,8 +139,8 @@ pub fn traceLine(
 
 fn transformPoint(v: rl.c.Vector3, m: rlgl.Matrix) rl.c.Vector3 {
     return .{
-        .x = m.m0 * v.x + m.m4 * v.y + m.m8 * v.z + m.m12,
-        .y = m.m1 * v.x + m.m5 * v.y + m.m9 * v.z + m.m13,
-        .z = m.m2 * v.x + m.m6 * v.y + m.m10 * v.z + m.m14,
+        .x = m.m0 * v.x + m.m1 * v.y + m.m2 * v.z + m.m3,
+        .y = m.m4 * v.x + m.m5 * v.y + m.m6 * v.z + m.m7,
+        .z = m.m8 * v.x + m.m9 * v.y + m.m10 * v.z + m.m11,
     };
 }
