@@ -85,6 +85,23 @@ pub fn lineAABBIntersection(
     return true;
 }
 
+pub fn linePlaneIntersection(n: rl.c.Vector3, c: rl.c.Vector3, x0: rl.c.Vector3, x1: rl.c.Vector3, vecIntersection: *rl.c.Vector3, fraction: *f32) bool {
+    // n - plane normal
+    // c - any point in plance
+    // x0 - beginning of line
+    // x1 - end of line
+    const v = gmath.sub(x1, x0);
+    const w = gmath.sub(c, x0);
+
+    const k = gmath.dotProduct(w, n) / gmath.dotProduct(v, n);
+
+    vecIntersection.* = gmath.add(x0, gmath.mul(v, k));
+
+    fraction.* = k;
+
+    return k >= 0 and k <= 1;
+}
+
 pub fn traceLine(
     targets: []const Target,
     v0: rl.c.Vector3,
@@ -108,6 +125,12 @@ pub fn traceLine(
                 vecIntersection.* = transformPoint(testIntersection, @bitCast(target.entity.mTransform));
                 hit = true;
             }
+        }
+
+        if (linePlaneIntersection(.{ .x = 0, .y = 1, .z = 0 }, .{ .x = 0, .y = 0, .z = 0 }, v0, v1, &testIntersection, &testFraction)) {
+            vecIntersection.* = testIntersection;
+            lowestFraction = testFraction;
+            hit = true;
         }
     }
 
