@@ -34,14 +34,14 @@ pub const Entity = struct {
         const hx = vecScaling.x * 0.5;
         const hy = vecScaling.y * 0.5;
         const hz = vecScaling.z * 0.5;
-        self.boundingRadius = gmath.LengthSquared(.{ .x = hx, .y = hy, .z = hz });
+        self.boundingRadius = gmath.Length(.{ .x = hx, .y = hy, .z = hz });
     }
 
     pub fn getPosition(self: *Entity) rl.c.Vector3 {
         return .{
-            .x = self.mTransform.m12,
-            .y = self.mTransform.m13,
-            .z = self.mTransform.m14,
+            .x = self.mTransform.m3,
+            .y = self.mTransform.m7,
+            .z = self.mTransform.m11,
         };
     }
 };
@@ -126,14 +126,14 @@ pub fn main() void {
     var image = rl.c.LoadImage("/home/blitz/sandbox/gd/assets/kanye.png");
     rl.c.ImageColorReplace(&image, rl.c.WHITE, rl.c.BLANK);
     const texture = rl.c.LoadTextureFromImage(image);
-    std.debug.print("texture id: {}\n", .{texture.id});
     rl.c.UnloadImage(image);
 
-    camera.target = box;
-    camera.position = gmath.sub(box, gmath.mul(angView.toVector(), cameraOffset));
-
     var f: frustum.Frustum = undefined;
-
+    std.debug.print("forward: ({d:.3}, {d:.3}, {d:.3})\n", .{
+        angView.toVector().x,
+        angView.toVector().y,
+        angView.toVector().z,
+    });
     while (!rl.c.WindowShouldClose()) {
         entityCount = 0;
         movement.update(&box, angView.toVector());
@@ -241,6 +241,9 @@ pub fn main() void {
         const vp = rlgl.MatrixMultiply(v, p);
         f = frustum.Frustum.init(@bitCast(vp));
 
+        std.debug.print("{any}\n", .{vp});
+
+        std.debug.print("prop1 transform m12={d:.3} m13={d:.3} m14={d:.3}\n", .{ prop1.mTransform.m12, prop1.mTransform.m13, prop1.mTransform.m14 });
         const playerScale = rlgl.MatrixScale(5, 5, 5);
 
         const playerTransform = rlgl.MatrixMultiply(playerRotation, playerScale);

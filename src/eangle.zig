@@ -10,9 +10,9 @@ pub const EAngle = struct {
         const p_rad = self.p * std.math.pi / 180.0;
         const y_rad = self.y * std.math.pi / 180.0;
         return .{
-            .x = std.math.cos(y_rad) * std.math.cos(p_rad),
+            .x = std.math.sin(y_rad) * std.math.cos(p_rad),
             .y = std.math.sin(p_rad),
-            .z = std.math.sin(y_rad) * std.math.cos(p_rad),
+            .z = -std.math.cos(y_rad) * std.math.cos(p_rad),
         };
     }
 
