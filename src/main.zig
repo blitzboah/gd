@@ -241,9 +241,6 @@ pub fn main() void {
         const vp = rlgl.MatrixMultiply(v, p);
         f = frustum.Frustum.init(@bitCast(vp));
 
-        std.debug.print("{any}\n", .{vp});
-
-        std.debug.print("prop1 transform m12={d:.3} m13={d:.3} m14={d:.3}\n", .{ prop1.mTransform.m12, prop1.mTransform.m13, prop1.mTransform.m14 });
         const playerScale = rlgl.MatrixScale(5, 5, 5);
 
         const playerTransform = rlgl.MatrixMultiply(playerRotation, playerScale);
